@@ -13,9 +13,9 @@ import pickle
 import urllib
 import csv
 
-Location = collections.namedtuple('Location', 'lat lng')
-#Highway = collections.namedtuple('Highway', '...') # Tram
-#Congestion = collections.namedtuple('Congestion', '...')
+Location = collections.namedtuple('Location', 'lng lat')
+Highway = collections.namedtuple('Highway', 'start end') # Tram
+Congestion = collections.namedtuple('Congestion', 'actual future')
 
 #OSM GRAPH
 def exists_graph(GRAPH_FILENAME):
@@ -26,13 +26,7 @@ def download_graph(PLACE):
     """..."""
 
     graph = ox.graph_from_place(PLACE, network_type='drive', simplify=True)
-    """for node1, info1 in graph.nodes.items():
-        print(node1, info1)
-        # for each adjacent node and its information...
-        for node2, edge in graph.adj[node1].items():
-            print('    ', node2)
-            print('        ', edge)"""
-    #graph = ox.utils_graph.get_digraph(graph, weight='length')
+    graph = ox.utils_graph.get_digraph(graph, weight='length')
     return graph
 
 
@@ -56,88 +50,94 @@ def load_graph(GRAPH_FILENAME):
 def plot_graph(graph):
     """..."""
 
-    ox.plot_graph(graph, node_size=30, bgcolor = 'white', node_color = 'red', edge_color = 'black', figsize=(100,100), show=False, save=True, filepath='Barcelona.png')
+    ox.plot_graph(graph, node_size=0, figsize=(100,100), show=False, save=True, filepath='Barcelona.png')
 
 
 #HIGHWAYS
 def download_highways(HIGHWAYS_URL):
     """..."""
 
+    highways = [[] for i in range(550)]
     with urllib.request.urlopen(HIGHWAYS_URL) as response:
         lines = [l.decode('utf-8') for l in response.readlines()]
         reader = csv.reader(lines, delimiter=',', quotechar='"')
-        return reader
+        next(reader)
+        for line in reader:
+            way_id, way_component, description, lng, lat = line
+            location = (Location) (float(lng), float(lat))
+            highways[int(way_id)].append(location)
+    return highways
+    #Returns a List in which position i contains a List with all Locations that form the segments of the way with way_id = i.
 
 
-def plot_highways(highways, highways_png, SIZE):
+
+def plot_highways(highways_list, highways_png_filename, size):
     """..."""
 
-    next(highways)  # ignore first line with description
-    m = StaticMap(SIZE, SIZE)
-    current_way_id = 0
-    node_a, node_b = (float(0), float(0))
-    for line in highways:
-        way_id, way_component, description, lng, lat = line
-        if way_id == current_way_id:
-            node_b = (float(lng), float(lat))
-            line = Line((node_a, node_b), 'red', 2)
-            m.add_line(line)
-            node_a = node_b
-        else:
-            current_way_id = way_id
-            node_a = (float(lng), float(lat))
+    m = StaticMap(size, size)
+    for way in highways_list:
+        first = True
+        for location in way:
+            if not first:
+                node_b = location
+                line = Line((node_a, node_b), 'red', 2)
+                m.add_line(line)
+                node_a = node_b
+            else:
+                node_a = location
+                first = False
     image = m.render()
-    image.save(highways_png)
-
+    image.save(highways_png_filename)
 
 #CONGESTIONS
 def download_congestions(CONGESTIONS_URL):
     """..."""
-
+    congestions = [None] * 550
     with urllib.request.urlopen(CONGESTIONS_URL) as response:
         lines = [l.decode('utf-8') for l in response.readlines()]
         reader = csv.reader(lines, delimiter='#', quotechar='"')
-        return reader
+        for line in reader:
+            way_id, date, actual_value, future_value = line
+            congestion = (Congestion) (int(actual_value), int(future_value))
+            congestions[int(way_id)] = congestion
+    return congestions
+    #Returns a List in which position i contains the tuple related to Congestion in highway with way_id = i.
 
-
-def plot_congestions(highways, congestions, congestions_png, SIZE):
+def plot_congestions(highways_list, congestions_list, congestions_png, size):
     """..."""
 
-    actual_status=[0 for i in range(600)]
-    future_status=[0 for i in range(600)]
-    for line in congestions:
-        way_id, date, actual_value, future_value = line
-        actual_status[int(way_id)] = int(actual_value)
-        future_status[int(way_id)] = int(future_value)
-
-    next(highways)  # ignore first line with description
-    m = StaticMap(SIZE, SIZE)
-    current_way_id = 0
-    node_a, node_b = (float(0), float(0))
-    for line in highways:
-        way_id, way_component, description, lng, lat = line
-        way = int(way_id)
-        if way == current_way_id:
-            node_b = (float(lng), float(lat))
-            if actual_status[way] == 0:
-                line = Line((node_a, node_b), 'Aqua', 3)
-            if actual_status[way] == 1:
-                line = Line((node_a, node_b), 'Lime', 3)
-            if actual_status[way] == 2:
-                line = Line((node_a, node_b), 'Green', 3)
-            if actual_status[way] == 3:
-                line = Line((node_a, node_b), 'OrangeRed', 3)
-            if actual_status[way] == 4:
-                line = Line((node_a, node_b), 'Red', 3)
-            if actual_status[way] == 5:
-                line = Line((node_a, node_b), 'DarkRed', 3)
-            if actual_status[way] == 6:
-                line = Line((node_a, node_b), 'Black', 3)
-            m.add_line(line)
-            node_a = node_b
+    m = StaticMap(size, size)
+    way_id = -1
+    for way in highways_list:
+        way_id += 1
+        #Podriamos hacer una función set_color
+        if congestions_list[way_id] != None:
+            if congestions_list[way_id].actual == 0:
+                color = 'Aqua'
+            if congestions_list[way_id].actual == 1:
+                color = 'Lime'
+            if congestions_list[way_id].actual == 2:
+                color = 'Green'
+            if congestions_list[way_id].actual == 3:
+                color = 'OrangeRed'
+            if congestions_list[way_id].actual == 4:
+                color = 'Red'
+            if congestions_list[way_id].actual == 5:
+                color = 'DarkRed'
+            if congestions_list[way_id].actual == 6:
+                color = 'Black'
         else:
-            current_way_id = way
-            node_a = (float(lng), float(lat))
+            color = 'Aqua'
+        first = True
+        for location in way:
+            if not first:
+                node_b = location
+                line = Line((node_a, node_b), color, 2)
+                m.add_line(line)
+                node_a = node_b
+            else:
+                node_a = location
+                first = False
     image = m.render()
     image.save(congestions_png)
 
