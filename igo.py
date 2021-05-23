@@ -135,7 +135,24 @@ def build_igraph(graph, highways, congestions):
     """..."""
 
 
-f"{place1}, {city}"
+def formatted_address(place):
+    return f"{place}, {PLACE}"
+
+
+def get_k_shortest_paths_with_itime(igraph, place1, place2):
+    origin = ox.geocoder.geocode(formatted_address(place1))
+    destination = ox.geocoder.geocode(formatted_address(place2))
+    print(origin)
+    print(destination)
+
+    ox.distance.k_shortest_paths(igraph, origin, destination, 3, weight='itime')
+
+
+def test():
+    get_k_shortest_paths_with_itime(igraph, "Campus Nord", "Sagrada Familia")
+
+
+test()
 """
 # TO DO: :
 K SHORTEST path
