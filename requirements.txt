@@ -1,0 +1,6 @@
+haversine==2.3.0
+networkx==2.5.1
+osmnx==1.1.0
+python-telegram-bot==13.5
+scikit-learn==0.24.2
+staticmap==0.5.5
