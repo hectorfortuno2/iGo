@@ -18,27 +18,50 @@ interface between their instructions and methods needed to get the desired and c
 
 ## Requirements
 
-
+This project requires a series of Python libraries to be installed so that it can run with no errors.
+You can actually downloaded all necessary libraries running command `pip install -r requirements.txt` or
+`pip3 install -r requirements.txt`, in your terminal, in the `requirements.txt` file directory.
 
 ## iGo Python module
 
+The `iGo.py` python file provides the implementation for manipulating data related to the
+highways and their congestion of the city of Barcelona, Catalonia.
+It also provides methods to get shortest paths between two locations and plot them
+in a map.
 
+### Methods
+
+The module contains several methods that can be divided in different groups:
+
+1. `Open Street Maps`: methods to download the OSMnx graph of the city of Barcelona, look if it already exists, or plot it
+into a PNG image.
+2. `Highways`: methods related to the download and manipulation of the Highways data of Barcelona.
+3. `Congestions`: methods related to the download and manipulation of the Congestions data of the Highways of Barcelona.
+4. `iGraph`: methods to insert the previously downloaded data into the OSMnx graph of Barcelona, and also complete the edges
+without given information using several functions and algorithms. Head to the `iGo.py` file to know more about them.
+There is also a function to plot each way congestion into a map saved as a PNG image file.
+5. `iPath`: methods to calculate the best or k paths from an origin to a destination location and print it in a map saved
+as a PNG image file. Head to the `iGo.py` file to know more about them.
 
 ## Telegram bot
 
+The `bot.py` Python file provides the Telegram bot implementation that uses methods from the `iGo.py` module
+in order to create a simple interface for users to get information about driving ways of Barcelona as well as
+getting the shortest path to a desired place of the city.
+
 ### Commands
 
-Here are the available commands of the iGo bot:
+Here are the available commands of the iGo Telegram bot:
 
 - `/start`: conversation with the bot gets started.
 - `/help`: assists the user with information of the available commands.
 - `/author`: shows the author/s of the project.
-- `/where`: shows a map with your current position.
+- `/where`: shows a map with the user current position.
 - `/go destination`: shows a map with the shortest path from the user location to a given destination in Barcelona.
    In addition, the map shows some alternative paths to follow in order to arrive to the same point.
    Examples:
    - `/go Camp Nou`
-   - `/go Sagrada Família`
+   - `/go Sagrada Familia`
 - `/congestions`: shows a map with live congestions of Barcelona's driving ways.
 
 ### Installation
@@ -53,8 +76,18 @@ These are the steps you need to follow in order to use the `iGo` bot by yourself
 5. Install all Python libraries required, specified in the `requirements.txt` text file. Pay attention to their version.
 6. Being in your created directory, run the `bot.py` in Python. Head to your bot in the Telegram app and... ready to go!
 
+### Slow Performance Issue
+
+As you may notice when using the bot, the performance is not as good as one expects. Basically, there are two reasons:
+
+>First one is that, we (the authors) do not have enough knowledge to design a multi-threading code or to implement other type
+of methods in order to achieve a better performance time. At least, not yet... but we will soon!
+
+>Second one is that the `network` library is quite slow. The performance time of their methods are big and, as we have a big graph
+as the Barcelona driving ways one, time increases a lot. In addition, data provided by the Barcelona town hall is not complete and
+does not have a good format, so managing that data is difficult and time-costing.
 
 ## Authors
 
-Héctor Fortuño and Ramon Ventura, freshmen of the Computer Science Degreee in Data Science and Engineering
+Héctor Fortuño and Ramon Ventura, freshmen of the Computer Science Degree in Data Science and Engineering
 at the Universitat Politècnica de Catalunya (UPC).
