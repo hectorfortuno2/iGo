@@ -78,7 +78,7 @@ These are the steps you need to follow in order to use the `iGo` bot by yourself
 
 ### Slow Performance Issue
 
-As you may notice when using the bot, the performance is not as good as one expects. Basically, there are two reasons:
+As you may notice when using the bot, the performance is not as good as one expects. Basically, there are two reasons that lead to this:
 
 >First one is that, we (the authors) do not have enough knowledge to design a multi-threading code or to implement other type
 of methods in order to achieve a better performance time. At least, not yet... but we will soon!
