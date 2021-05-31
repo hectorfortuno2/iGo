@@ -19,6 +19,7 @@ interface between their instructions and methods needed to get the desired and c
 ## Requirements
 
 
+
 ## iGo Python module
 
 
@@ -27,6 +28,18 @@ interface between their instructions and methods needed to get the desired and c
 
 ### Commands
 
+Here are the available commands of the iGo bot:
+
+- `/start`: conversation with the bot gets started.
+- `/help`: assists the user with information of the available commands.
+- `/author`: shows the author/s of the project.
+- `/where`: shows a map with your current position.
+- `/go destination`: shows a map with the shortest path from the user location to a given destination in Barcelona.
+   In addition, the map shows some alternative paths to follow in order to arrive to the same point.
+   Examples:
+   - `/go Camp Nou`
+   - `/go Sagrada Família`
+- `/congestions`: shows a map with live congestions of Barcelona's driving ways.
 
 ### Installation
 
@@ -34,10 +47,10 @@ These are the steps you need to follow in order to use the `iGo` bot by yourself
 
 1. Create a directory in your computer where you will save all needed files. Name it, for example, `iGo_files`.
 2. Download the 'iGo.py' and the `bot.py` files and save them with the same names in your previously created directory.
-3. Install the [Telegram App] (https://desktop.telegram.org/) in your computer.
+3. Install the [`Telegram App`] (https://desktop.telegram.org/) in your computer.
 4. Create a new Telegram bot with the help of [`@BotFather`](https://t.me/botfather) and save the Token in a file named
 `token.txt` inside the working directory.
-5. Install all Python libraries required, specified in the `requirements.txt` text file. Pay attention at the version.
+5. Install all Python libraries required, specified in the `requirements.txt` text file. Pay attention to their version.
 6. Being in your created directory, run the `bot.py` in Python. Head to your bot in the Telegram app and... ready to go!
 
 
