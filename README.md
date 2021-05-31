@@ -19,7 +19,7 @@ interface between their instructions and methods needed to get the desired and c
 ## Requirements
 
 This project requires a series of Python libraries to be installed so that it can run with no errors.
-You can actually downloaded all necessary libraries running command `pip install -r requirements.txt` or
+You can actually download all necessary libraries running command `pip install -r requirements.txt` or
 `pip3 install -r requirements.txt`, in your terminal, in the `requirements.txt` file directory.
 
 ## iGo Python module
