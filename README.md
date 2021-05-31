@@ -16,6 +16,8 @@ maps.
 >`bot.py` is the Python file containing the implementation of a Telegram Bot that uses the `iGo` module in order to offer users a simple
 interface between their instructions and methods needed to get the desired and correct output.
 
+## Requirements
+
 
 ## iGo Python module
 
@@ -25,6 +27,18 @@ interface between their instructions and methods needed to get the desired and c
 
 ### Commands
 
+
+### Installation
+
+These are the steps you need to follow in order to use the `iGo` bot by yourself:
+
+1. Create a directory in your computer where you will save all needed files. Name it, for example, `iGo_files`.
+2. Download the 'iGo.py' and the `bot.py` files and save them with the same names in your previously created directory.
+3. Install the [Telegram App] (https://desktop.telegram.org/) in your computer.
+4. Create a new Telegram bot with the help of [`@BotFather`](https://t.me/botfather) and save the Token in a file named
+`token.txt` inside the working directory.
+5. Install all Python libraries required, specified in the `requirements.txt` text file. Pay attention at the version.
+6. Being in your created directory, run the `bot.py` in Python. Head to your bot in the Telegram app and... ready to go!
 
 
 ## Authors
