@@ -1,16 +1,20 @@
 # bot.py
 
-"""bot.pry
-The bot.py file """
+"""bot.py
+The bot.py Python file provides the Telegram bot implementation that uses methods from the 'iGo.py' module
+in order to create a simple interface for users to get information about driving ways of Barcelona as well as
+getting the shortest path to a desired place of the city."""
 
 # authors: Héctor Fortuño and Ramon Ventura
 
-import iGo
-import threading
 import collections
 from datetime import datetime, date, timedelta
+import iGo
 import os
+import osmnx as ox
+from staticmap import StaticMap, CircleMarker, IconMarker, Line
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
+import threading
 
 PLACE = 'Barcelona, Catalonia'
 GRAPH_FILENAME = 'barcelona.graph'
@@ -33,25 +37,34 @@ congestions_download_datetime = None
 
 def __boot():
     """Private method that boots our bot. The OSMnx graph is downloaded and so
-    are the highways and congestions. Also, igraph is created."""
+    are the highways and congestions. Also, the intelligent graph is created."""
 
-    global graph, iGraph, highways, congestions, congestions_download_datetime
+    global graph, igraph, highways, congestions, congestions_download_datetime
+
     # Get OSMnx graph from Barcelona city. Save it as a global variable.
     if not iGo.exists_graph(GRAPH_FILENAME):
         graph = iGo.download_graph(PLACE)
         iGo.save_graph(graph, GRAPH_FILENAME)
     else:
         graph = iGo.load_graph(GRAPH_FILENAME)
+
     # Download Barcelona Highways. Save them as a global variable.
     highways = iGo.download_highways(HIGHWAYS_URL)
+
     # Download Barcelona Highways' congestions. Save them as a global variable.
     congestions = iGo.download_congestions(CONGESTIONS_URL)
+
     # Set global variable 'congestions_download_datetime' to current datetime.
     current_datetime = datetime.now()
     congestions_download_datetime = current_datetime
+
     # Build the intelligent graph.
-    iGo.build_igraph(graph, highways, congestions)
-    print('Ready to work!')
+    igraph = iGo.build_igraph(graph, highways, congestions)
+
+    # Plot and store the real-time congestions.
+    filename = 'congestions.png'
+    iGo.plot_igraph_congestions(igraph, filename, SIZE, current=True)
+    print('Ready to go!')
 
 
 __boot()
@@ -63,9 +76,11 @@ def __need_refresh():
 
     # Find the current time.
     current_datetime = datetime.now()
+
     # Substract the time when the last refresh was done to the current one.
     difference = current_datetime - congestions_download_datetime
     seconds = difference.total_seconds()
+
     # If the difference exceeds a total of 5 minutes, return True. Otherwise, return False.
     if seconds > 300:
         return True
@@ -77,18 +92,21 @@ def __refresh_igraph():
     congestions and building again an igraph."""
 
     global congestions, igraph, congestions_download_datetime
+
     # Update Barcelona Highways' congestions. Save them as a global variable.
     congestions = iGo.download_congestions(CONGESTIONS_URL)
 
     # Update global variable 'congestions_download_datetime' to current datetime.
     current_datetime = datetime.now()
     congestions_download_datetime = current_datetime
+
     # Update the intelligent graph.
     igraph = iGo.build_igraph(graph, highways, congestions)
 
-    # Plots and stores the real-time congestions once updated.
+    # Plot and store the real-time congestions once updated.
     filename = 'congestions.png'
-    iGo.plot_congestions(highways, congestions, filename, SIZE)
+    os.remove(filename)
+    iGo.plot_igraph_congestions(igraph, filename, SIZE, current=True)
 
 
 def start(update, context):
@@ -96,7 +114,8 @@ def start(update, context):
 
     context.bot.send_message(
         chat_id=update.effective_chat.id,
-        text="Hello! My name is iGo, the Telegram bot to get wherever you want in Barcelona...  at the speed of light!")
+        text="Hello! My name is iGo, the Telegram bot to get wherever you want, by car, in Barcelona...  at the speed of light!\n" +
+        "Use /help command to know more about me.")
 
 
 def help(update, context):
@@ -104,7 +123,11 @@ def help(update, context):
 
     context.bot.send_message(
         chat_id=update.effective_chat.id,
-        text="I have the following commands: /author, /go, /where, /congestions")
+        text="I have the following commands:\n" +
+        "- /author: shows the author/s of the project.\n" +
+        "- /where: shows a map with your current position.\n" +
+        "- /go destination: shows a map with the shortest path from your location to a given destination in Barcelona.\n" +
+        "- /congestions: shows a map with live congestions of Barcelona's driving ways.")
 
 
 def author(update, context):
@@ -119,10 +142,12 @@ def congestions(update, context):
     """Method that sends the user an image of the real-time congestions in different colors."""
 
     filename = 'congestions.png'
+
     # Checks if the congestions need to be updated.
     if __need_refresh():
         __refresh_igraph()
-    # Image saved in __refresh_igraph method is sent to the user.
+
+    # Image saved in '__refresh_igraph' method is sent to the user.
     context.bot.send_photo(
         chat_id=update.effective_chat.id,
         photo=open(filename, 'rb'))
@@ -131,68 +156,65 @@ def congestions(update, context):
 def where(update, context):
     """Method that sends an image to the user of his current location."""
 
-    try:  # QUITAR TRY EXCEPT?
-        # Check if we already have the location of the user, if this is the case,
-        # an image is sent.
-        try:
-            context.user_data['location']
-            context.bot.send_message(
-                chat_id=update.effective_chat.id,
-                text='Here is your current location.')
-
-            lng, lat = context.user_data['location'].lng, context.user_data['location'].lat
-            filename = update.effective_chat.username + '.png'
-
-            # Create a map and place a marker in user's location.
-            map = StaticMap(500, 500)
-            mapa.add_marker(CircleMarker((lng, lat), 'red', 10))  # AÑADIR MARCADOR NUEVO PNG
-            imatge = mapa.render()
-            imatge.save(filename)
-            # Send the image
-            context.bot.send_photo(
-                chat_id=update.effective_chat.id,
-                photo=open(filename, 'rb'))
-            # os.remove(filename) DESCOMENTAR!!!
-
-            # In order to make sure the user is satisfied, we ask again for the
-            # location in case the user didn't update it properly.
-            context.bot.send_message(
-                chat_id=update.effective_chat.id,
-                text='In case this is not your current position, send me your location.')
-
-        except:
-            # In case of not having the location, the user is asked to send it.
-            context.bot.send_message(
-                chat_id=update.effective_chat.id,
-                text='Please send me your current location.')
-    except Exception as e:
-        print(e)
-        print('where')
+    # Check if we already have the location of the user, if this is the case,
+    # an image is sent.
+    try:
+        context.user_data['location']
         context.bot.send_message(
             chat_id=update.effective_chat.id,
-            text='💣')
+            text='Here is your current location.')
+
+        lng, lat = context.user_data['location'].lng, context.user_data['location'].lat
+
+        # Check if the user is registered with a username (if not, ask to do so).
+        if update.effective_chat.username == None:
+            context.bot.send_message(
+                chat_id=update.effective_chat.id,
+                text='Please set a username to your Telegram account.')
+            return 0
+
+        # Create a png file (unique per user).
+        filename = update.effective_chat.username + '.png'
+
+        # Create a map and place a marker in user's location.
+        map = StaticMap(500, 500)
+        map.add_marker(IconMarker((lng, lat), './origin.png', 10, 10))
+        image = map.render()
+        image.save(filename)
+
+        # Send the image
+        context.bot.send_photo(
+            chat_id=update.effective_chat.id,
+            photo=open(filename, 'rb'))
+        os.remove(filename)
+
+        # In order to make sure the user is satisfied, we ask again for the
+        # location in case the user didn't update it properly.
+        context.bot.send_message(
+            chat_id=update.effective_chat.id,
+            text='In case this is not your current position, send me your new location.')
+
+    except:
+        # In case of not having the location, the user is asked to send it.
+        context.bot.send_message(
+            chat_id=update.effective_chat.id,
+            text='Please send me your current location.')
 
 
 def current_location(update, context):
     """Method that stores and updates the user's current location."""
 
-    try:  # QUITAR TRY???
-        # Obtain the location of the user.
-        location = update.message.location
-        # Store it.
-        context.user_data['location'] = (Location)(location.longitude, location.latitude)
-        # Call the 'where' method in order to proceed with the new location.
-        where(update, context)
+    # Obtain the location of the user.
+    location = update.message.location
 
-    except Exception as e:
-        print(e)
-        print('current location')
-        context.bot.send_message(
-            chat_id=update.effective_chat.id,
-            text='💣')
+    # Store it.
+    context.user_data['location'] = (Location)(location.longitude, location.latitude)
+
+    # Call the 'where' method in order to proceed with the new location.
+    where(update, context)
 
 
-def __place_to_coordinates(place):
+def __place_to_coordinates(update, context, place):
     """Private method that converts the name of a place into coordinates. Returns
     a location."""
 
@@ -200,15 +222,28 @@ def __place_to_coordinates(place):
         # Checks if the message given by the user are coordinates.
         int(place[0])
     except:
-        # In case the given string is the name of the place, we convert it into coordinates.
+        # Execute if the message are not coordinates.
+        try:
+            # Check if we are given a valid place.
+            ox.geocoder.geocode(f"{place}, {PLACE}")
+        except:
+            # In case we are given something that is not a place or a pair of
+            # coordinates, the bot cancels the execution.
+            context.bot.send_message(
+                chat_id=update.effective_chat.id,
+                text='Not a valid location!')
+            return 0
+
+        # Convert the name of the place into coordinates.
         geo = ox.geocoder.geocode(f"{place}, {PLACE}")
-        coordinates = (Location)(geo.lng, geo.lat)
+        coordinates = (Location)(geo[1], geo[0])
         return coordinates
 
     # Convert string of coordinates into a tuple of floats.
     separated = place.split()
     first = float(separated[0])
     second = float(separated[1])
+
     # Revise which float is the latitude (bigger value than longitude) and which one is the longitude.
     if first > second:
         coordinates = (Location)(second, first)
@@ -222,20 +257,27 @@ def __pos(update, context):
     location by sending the name of a place or a pair of coordinates."""
 
     # In case the user sends the name of a place, convert it into coordinates.
-    context.user_data['location'] = __place_to_coordinates(update.message.text[5:])
+    context.user_data['location'] = __place_to_coordinates(update, context, update.message.text[5:])
     context.bot.send_message(
         chat_id=update.effective_chat.id,
         text='Location updated!')
 
 
 def go(update, context):
-    """Method that sends an image to the user of the 3 shortest paths to the destination specified."""
-
-    # TIEMPO DEL MEJOR PATH???
+    """Method that sends an image to the user of the 3 shortest paths to the
+    destination specified, highliting the fastest one in color"""
 
     destination = update.message.text[4:]
+
+    # If we are given no message, we notify the user and cancel the execution of the request.
+    if len(destination) == 0:
+        context.bot.send_message(
+            chat_id=update.effective_chat.id,
+            text='Please send me your destination and try again.')
+        return 0
+
     # Convert the destination of the user into coordinates.
-    destination_coordinates = __place_to_coordinates(destination)
+    destination_coordinates = __place_to_coordinates(update, context, destination)
 
     try:
         # Check if a location was already stored.
@@ -247,17 +289,37 @@ def go(update, context):
             text='Please send me your current location and try again.')
         return 0
 
+    origin_coordinates = context.user_data['location']
+
     # Check if our data needs to update.
     if __need_refresh():
         __refresh_igraph()
 
-    origin_coordinates = context.user_data['location']
+    try:
+        # Try finding the 3 best paths to the destination.
+        iGo.__get_3_best_ipaths(igraph, origin_coordinates, destination_coordinates)
+    except:
+        # If not possible, notify our user that we were unable to find a path.
+        context.bot.send_message(
+            chat_id=update.effective_chat.id,
+            text='Im sorry, I was not able to find a path to your destination.')
+        return 0
+
     # Find the 3 best paths to the destination.
     best_ipath_current, best_ipath_future, k_ipaths = iGo.__get_3_best_ipaths(
         igraph, origin_coordinates, destination_coordinates)
+
+    # Check if the user is registered with a username (if not, ask to do so).
+    if update.effective_chat.username == None:
+        context.bot.send_message(
+            chat_id=update.effective_chat.id,
+            text='Please set a username to your Telegram account.')
+        return 0
+
     filename = update.effective_chat.username + '.png'
+
     # Plot and send the user the 3 best paths, highliting the best one in color.
-    plot_k_ipaths(igraph, best_ipath_current, best_ipath_future, k_ipaths, filename, SIZE)
+    iGo.plot_k_ipaths(igraph, best_ipath_current, best_ipath_future, k_ipaths, filename, SIZE)
     context.bot.send_photo(
         chat_id=update.effective_chat.id,
         photo=open(filename, 'rb'))
