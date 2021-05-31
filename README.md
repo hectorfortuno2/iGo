@@ -83,7 +83,7 @@ As you may notice when using the bot, the performance is not as good as one expe
 >First one is that, we (the authors) do not have enough knowledge to design a multi-threading code or to implement other type
 of methods in order to achieve a better performance time. At least, not yet... but we will soon!
 
->Second one is that the `network` library is quite slow. The performance time of their methods are big and, as we have a big graph
+>Second one is that the `networkx` library is quite slow. The performance time of their methods are big and, as we have a big graph
 as the Barcelona driving ways one, time increases a lot. In addition, data provided by the Barcelona town hall is not complete and
 does not have a good format, so managing that data is difficult and time-costing.
 
